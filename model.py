@@ -5,20 +5,28 @@ from layer import MLP, Loss
 from optimizer import Opt
 
 class FCNN:
-    def __init__(self, layers, dims, step=1):
+    def __init__(self, neurons, layers, step=1):
         """ Fully Connected Neural Network with 2 hidden layers for multi-class classification problem"""  
         self.id = "mulit-label-classification"
         self.layers = layers
         self.Layers = [None] * self.layers
-        self.dims = dims
+        self.neurons = neurons
         self.step = step
-        self.Layers[0] = MLP(dims = [dims[0], 30], activation="relu")
-        self.Layers[1] = MLP(dims = [self.Layers[0].dims_out, 40], activation="relu")
-        self.Layers[2] = MLP(dims = [self.Layers[1].dims_out, 10], activation="relu")
-        self.Layers[3] = MLP(dims = [self.Layers[2].dims_out, dims[1]], activation="softmax")
+        for l in range(self.layers):
+            if l != self.layers-1:
+                self.Layers[l] = MLP(dims = [neurons[l], neurons[l+1]], activation="relu")
+            else:
+                self.Layers[l] = MLP(dims = [neurons[l], neurons[l+1]], activation="softmax")
 
-    def __repr__(self) -> str:
-        return f"FCNN(from={self.dims[0]}, to={self.dims[1]}, layers={self.layers}, problem={self.id})"
+    def __repr__(self):
+        s = f"FCNN("
+        for i in range(len(self.neurons)):
+            if 0<= i <=len(self.neurons)-2:
+                s += f"{self.neurons[i]}-->"
+            else:
+                s += f"{self.neurons[i]}, "
+        s+= f"h_layers={self.layers}, problem={self.id})"
+        return s
 
     def forward(self, X):
         for Layer in self.Layers:
@@ -32,12 +40,13 @@ class FCNN:
         self.trainX, self.trainY, self.validX, self.validY = F.split(X, y, 0.2)
         self.optimizer = Opt(lr)
         for t in tqdm(range(epochs)):
+            # Train Set
             self.trainX, self.trainY = F.shuffle(self.trainX, self.trainY)
             self.output = self.forward(self.trainX)
             self.lossTrain = Loss(self.trainY, self.output)
             self.lossTrain.backprop(self.Layers)
             self.optimizer.sgd(self.Layers)
-
+            # Validation Set
             self.outV = self.forward(self.validX)
             self.lossValid = Loss(self.validY, self.outV)
             if t%self.step==0:
