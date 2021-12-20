@@ -1,9 +1,15 @@
-from functions import shuffle
+from functions import shuffle, split
 import numpy as np
+import os
 
 class DataBase:
     def __init__(self, filename):
         self.file=filename
+        self.dirfile = "/".join(filename.split("/")[:-1])
+        self.name = filename.split("/")[-1]
+        print(self.name, self.dirfile, self.file)
+        if not os.path.exists(self.dirfile):
+            os.makedirs(self.dirfile)
         self.num_par={}
 
     def save_drag(self, data, labels):
@@ -41,43 +47,26 @@ class DataBase:
 
     def save_par(self, parameters):
         with open(self.file, "w") as f:
-            for key, parameter in parameters.items():
-                self.num_par[key]=len(parameter)
-                for l, par in enumerate(parameter):
-                    f.write(f"layer_{l}"+":"+key+"\n")
-                    for raw in par:
-                        for r in raw:
-                            if raw[-1]==r:
-                                f.write(str(r)+"\n")
-                            else:
-                                f.write(str(r)+",")                    
+            for l, parameter in enumerate(parameters):
+                f.write(f"layer {l}"+":" +"\n")
+                for raw in parameter:
+                    for r in raw:
+                        if raw[-1]==r:
+                            f.write(str(r)+"\n")
+                        else:
+                            f.write(str(r)+",")                    
                         
-    def load_par(self, num_w):    
-        parameters={"weights": [None]*num_w, "bias": [None]*num_w}
+    def load_par(self):    
+        pars = []
         with open(self.file, "r") as f:
-            l1=-1
-            l2=-1
-            for line in f:
-                line=line.strip()
-                if line[:5]=="layer":
-                    if line[-7:]=="weights":
-                        l1+=1
-                        key="weights"
-                        parameters[key][l1]=[]
-                    elif line[-4:]=="bias":
-                        l2+=1
-                        key="bias"
-                        parameters[key][l2]=[]
+            while True:
+                line = f.readline().strip()
+                if len(line) == 0:
+                    break
+                if line.split(" ")[0] == "layer":
+                    pars.append([])
                 else:
-                    line=line.split(",")
-                    line=[float(el) for el in line]
-                    if key=="weights":
-                        parameters[key][l1].append(line)
-                    elif key=="bias":
-                        parameters[key][l2].append(line)
-                    
-        for key, par in parameters.items():
-            for l in range(len(par)):
-                parameters[key][l]=np.array(parameters[key][l], dtype="float32")
-        return parameters["weights"], parameters["bias"]
+                    ln = line.split(",")
+                    pars[-1].append(ln)
 
+        return [np.array(p, dtype="float32") for p in pars]
