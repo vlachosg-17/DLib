@@ -7,7 +7,7 @@ from optimizer import Opt
 
 class FCNN:
     def __init__(self, neurons, stored_path=None, step=1):
-        """ Fully Connected Neural Network with 2 hidden layers for multi-class classification problem"""  
+        f""" Fully Connected Neural Network with {len(neurons) - 1} for multi-class classification problem"""  
         self.id = "mulit-label-classification"
         self.layers = len(neurons) - 1
         self.Layers = [None] * self.layers
@@ -17,7 +17,7 @@ class FCNN:
         if self.path is not None:
             self.db_weights = DataBase(self.path+"/weights.txt")
             self.db_bias = DataBase(self.path+"/bias.txt")
-            
+
         if self.path is None:
             for l in range(self.layers):
                 if l != self.layers-1:
