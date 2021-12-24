@@ -7,7 +7,7 @@ class DataBase:
         self.file=filename
         self.dirfile = "/".join(filename.split("/")[:-1])
         self.name = filename.split("/")[-1]
-        print(self.name, self.dirfile, self.file)
+        # print(self.name, self.dirfile, self.file)
         if not os.path.exists(self.dirfile):
             os.makedirs(self.dirfile)
         self.num_par={}
@@ -30,7 +30,7 @@ class DataBase:
         labels=np.array(labels_obserations, dtype="int32")
         return data, labels
     
-    def load_iris(self):
+    def load_iris(self, random_seed=0):
         with open(self.file, "r") as f:
             labels=[]
             data=[]
@@ -42,9 +42,9 @@ class DataBase:
                 data.append(line[:-1])
                 labels.append(line[-1])
         data, labels = np.array(data, dtype="float32"), np.array(labels)
-        # np.random.seed(0)
+        np.random.seed(random_seed)
         return shuffle(data, labels)
-
+    
     def save_par(self, parameters):
         with open(self.file, "w") as f:
             for l, parameter in enumerate(parameters):

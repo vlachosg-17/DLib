@@ -44,11 +44,10 @@ def one_hot(classes):
 
 def confusion_matrix(y_true, y_pred):
     levels = np.unique(y_true)
-    print(levels)
     C = np.zeros(shape = [len(levels), len(levels)])
-    for i, l1 in enumerate(levels):
-        for j, l2 in enumerate(levels):
-            C[i, j] = np.sum((y_true==l1) & (y_pred==l2))
+    for i, true_class in enumerate(levels):
+        for j, pred_class in enumerate(levels):
+            C[i, j] = np.sum((y_true==true_class) & (y_pred==pred_class))
     return C
 
 def accuracy(y_true, y_pred):

@@ -1,5 +1,6 @@
 import numpy as np
 import functions as F
+import dbs as DataBase
 
 class MLP:
     def __init__(self, dims,**kwargs):
@@ -27,6 +28,9 @@ class MLP:
         self.params = [self.w, self.b]
         self.DwL = None
         self.loss = None
+        self.x = None
+        self.z = None
+        self.y = None
 
     def __repr__(self):
         return f"Layer(in={self.dims_in}, out={self.dims_out})"
@@ -38,7 +42,7 @@ class MLP:
         # d: number of example in data set
         # n: number of neurons in current layer
         # m: in the next
-        self.x = x
+        self.x = x # d x n
         assert self.x.shape[1] == self.dims_in
         self.z = np.dot(self.x, self.w) + self.b # (d x n) @ (n x m) .+ (1 x m) = d x m
         self.y = self.f(self.z) # f(d x m) = d x m point wise function

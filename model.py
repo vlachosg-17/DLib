@@ -10,6 +10,7 @@ class FCNN:
         f""" Fully Connected Neural Network with {len(neurons) - 1} for multi-class classification problem"""  
         self.id = "mulit-label-classification"
         self.layers = len(neurons) - 1
+        self.batch = None
         self.Layers = [None] * self.layers
         self.neurons = neurons
         self.step = step
@@ -42,6 +43,12 @@ class FCNN:
                 s += f"{self.neurons[i]}, "
         s+= f"h_layers={self.layers}, problem={self.id})"
         return s
+    
+    def iter_batch(self, X):
+        n_data_segments = X.shape[0]//self.batch
+        segs = [[n, n+self.batch] for n in range(0, n_data_segments, self.batch)]
+        for seg in segs:
+            yield seg
 
     def forward(self, X):
         for Layer in self.Layers:
@@ -51,17 +58,23 @@ class FCNN:
     def predict(self, X):
         return np.argmax(self.forward(X), axis=1)
             
-    def train(self, X, y, epochs = 1, lr=0.01, save_pars_path=None):
-        self.save_path = save_pars_path
+    def train(self, X, y, epochs = 1, lr=0.01, batch_size=None, save_pars_path=None):
         self.trainX, self.trainY, self.validX, self.validY = F.split(X, y, 0.2)
+        if batch_size is None: self.batch = self.trainX.shape[0]
+        else: self.batch = batch_size
+        self.save_path = save_pars_path
         self.optimizer = Opt(lr)
         for t in tqdm(range(epochs)):
             # Train Set
             self.trainX, self.trainY = F.shuffle(self.trainX, self.trainY)
-            self.output = self.forward(self.trainX)
-            self.lossTrain = Loss(self.trainY, self.output)
-            self.lossTrain.backprop(self.Layers)
-            self.optimizer.sgd(self.Layers)
+            # --- batch iteration start here
+            for s in self.iter_batch(self.trainX):
+                self.output = self.forward(self.trainX[s[0]:s[1]])
+                self.lossTrain = Loss(self.trainY[s[0]:s[1]], self.output)
+                self.lossTrain.backprop(self.Layers)
+                self.optimizer.sgd(self.Layers)
+            # --- batch iteration ends here
+
             # Validation Set
             self.outV = self.forward(self.validX)
             self.lossValid = Loss(self.validY, self.outV)
@@ -71,6 +84,8 @@ class FCNN:
                     "validation error:", round(np.mean(self.lossValid.errors), 5))
         
         if self.save_path is not None:
+            self.db_weights = DataBase(self.save_path+"/weights.txt")
+            self.db_bias = DataBase(self.save_path+"/bias.txt")
             self.db_weights.save_par([self.Layers[l].w for l in range(len(self.Layers))])
             self.db_bias.save_par([self.Layers[l].b for l in range(len(self.Layers))])
                 
