@@ -1,18 +1,12 @@
 import numpy as np
 import functions as F
-import dbs as DataBase
 
 class MLP:
     def __init__(self, dims,**kwargs):
         if "w" in kwargs.keys():
             self.w = kwargs["w"]
-        else:
-            self.w = np.random.uniform(-np.sqrt(1/dims[0]),np.sqrt(1/dims[0]),size=[dims[0], dims[1]])
         if "b" in kwargs.keys():
             self.b = kwargs["b"]
-        else:
-            self.b = np.random.uniform(-np.sqrt(1/dims[0]),np.sqrt(1/dims[0]), size=[1, self.w.shape[1]])
-
         if "activation" in kwargs.keys():
             if kwargs["activation"] == "softmax":
                 self.f = F.softmax
@@ -22,6 +16,7 @@ class MLP:
                 self.f = F.sigmoid
         else:
             self.f = F.relu
+        
         self.id = "layer"
         self.dims_in = dims[0]
         self.dims_out = dims[1]
@@ -60,6 +55,7 @@ class MLP:
         # n2: number of neurons in the current layer
         # n1: number of neurons in the layer before
         # d: number of examples in data set
+        # n: number of classes in the dataset
         if node.id is "loss":
             if node.type == "entropy": self.DzL = node.y_hat - node.y # (d x n) - (d x n) = d x n
             else: self.DzL = 2*(node.y_hat - node.y) * self.f(self.z) # ((d x n) - (d x n)) * d x n = d x n

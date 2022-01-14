@@ -3,23 +3,24 @@ import numpy as np
 import os
 
 class DataBase:
-    def __init__(self, filename):
-        self.file=filename
-        self.dirfile = "/".join(filename.split("/")[:-1])
-        self.name = filename.split("/")[-1]
-        # print(self.name, self.dirfile, self.file)
-        if not os.path.exists(self.dirfile):
-            os.makedirs(self.dirfile)
+    def __init__(self, path, create=False):
+        self.path=path
+        self.filepath = None
+        if create:
+            if not os.path.exists(self.path):
+                os.makedirs(self.path)
         self.num_par={}
 
-    def save_drag(self, data, labels):
+    def save_drag(self, data, labels, filename):
         self.dims=data.shape
-        with open(self.file, "w") as f:
+        self.filepath = self.path + "/" + filename
+        with open(self.filepath, "w") as f:
             for d, l in zip(data, labels):
                 f.write(str(d.item())+","+str(l)+"\n")
     
-    def load_drag(self):
-        with open(self.file, "r") as f:
+    def load_drag(self, filename):
+        self.filepath = self.path + "/" + filename
+        with open(self.filepath, "r") as f:
             data_observations=[]
             labels_obserations=[]
             for line in f:
@@ -30,8 +31,9 @@ class DataBase:
         labels=np.array(labels_obserations, dtype="int32")
         return data, labels
     
-    def load_iris(self, random_seed=0):
-        with open(self.file, "r") as f:
+    def load_iris(self, filename, random_seed=0):
+        self.filepath = self.path + "/" + filename
+        with open(self.filepath, "r") as f:
             labels=[]
             data=[]
             for line in f:
@@ -44,9 +46,29 @@ class DataBase:
         data, labels = np.array(data, dtype="float32"), np.array(labels)
         np.random.seed(random_seed)
         return shuffle(data, labels)
-    
-    def save_par(self, parameters):
-        with open(self.file, "w") as f:
+
+    def load_pima(self, filename):
+        self.filepath = self.path + "/" + filename
+        with open(self.filepath, "r") as f:
+            labels=[]
+            data=[]
+            k=0
+            for line in f:
+                if k==0:
+                    next    
+                line=line.strip()
+                if len(line)==0:
+                    break
+                line=line.split(",")
+                data.append(line[:-1])
+                labels.append(line[-1])
+                k+=1
+        data, labels = np.array(data, dtype="float32"), np.array(labels, dtype="int8")
+        return data, labels
+
+    def save_par(self, parameters, filename):
+        self.filepath = self.path + "/" + filename
+        with open(self.filepath, "w") as f:
             for l, parameter in enumerate(parameters):
                 f.write(f"layer {l}"+":" +"\n")
                 for raw in parameter:
@@ -54,11 +76,18 @@ class DataBase:
                         if raw[-1]==r:
                             f.write(str(r)+"\n")
                         else:
-                            f.write(str(r)+",")                    
-                        
-    def load_par(self):    
+                            f.write(str(r)+",") 
+
+    def save_error(self, errors, filename):
+        self.filepath = self.path + "/" + filename
+        with open(self.filepath, "w") as f:
+            for err in errors:
+                f.write(f"{err}"+"\n")
+
+    def load_par(self, filename): 
+        self.filepath = self.path + "/" + filename   
         pars = []
-        with open(self.file, "r") as f:
+        with open(self.filepath, "r") as f:
             while True:
                 line = f.readline().strip()
                 if len(line) == 0:
@@ -70,3 +99,11 @@ class DataBase:
                     pars[-1].append(ln)
 
         return [np.array(p, dtype="float32") for p in pars]
+    
+    def load_errors(self, filename):
+        self.filepath = self.path + "/" + filename
+        errors=[]
+        with open(self.filepath, "r") as f:
+            for line in f:
+                errors.append(float(line.strip()))
+        return errors
