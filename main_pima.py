@@ -1,11 +1,10 @@
 import numpy as np
 from model import FCNN
 from functions import *
-from sklearn.metrics import roc_auc_score, roc_curve
-from dbs import DataBase
+from sklearn.metrics import roc_auc_score, roc_curve, accuracy_score, confusion_matrix
 import matplotlib.pyplot as plt
+from dbs import DataBase
 import argparse
-
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--train",               type=bool, default=False)
@@ -42,14 +41,13 @@ if "__main__" == __name__:
     
 
     cm = confusion_matrix(y_test, y_pred)
-    acc = accuracy(y_test, y_pred)
     print("Confusion Matrix:")
     print(cm)
-    print("Accuracy:", acc)
+    print("Accuracy:", np.diag(cm).sum()/cm.sum())
     print("AUC:", roc_auc_score(y_test, y_pred))
 
-    plt.plot([e for e in range(hpars.epochs)], Net.train_errors)
-    plt.plot([e for e in range(hpars.epochs)], Net.valid_errors)
+    plt.plot([e for e in range(len(Net.train_errors))], Net.train_errors)
+    plt.plot([e for e in range(len(Net.valid_errors))], Net.valid_errors)
     plt.show()
     
     # plot_roc(y_test, y_pred, y_prob)

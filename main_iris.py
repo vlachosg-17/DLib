@@ -1,8 +1,8 @@
 import numpy as np
-from numpy.core.defchararray import array
+from sklearn.utils import multiclass
 from model import FCNN
 from functions import *
-from sklearn.metrics import roc_auc_score, roc_curve
+from sklearn.metrics import roc_auc_score, roc_curve, confusion_matrix, accuracy_score
 import matplotlib.pyplot as plt
 from dbs import DataBase
 import argparse
@@ -14,7 +14,7 @@ parser.add_argument("--epochs",               type=int, default=1500)
 parser.add_argument("--lr",                   type=float, default=0.0003)
 parser.add_argument("--batch_size",           type=int, default=4)
 parser.add_argument("--hidden_layer_neurons", type=int, default=[40, 30, 10])
-parser.add_argument("--test_perc",           type=int, default=0.4)
+parser.add_argument("--test_prc",           type=int, default=0.4)
 parser.add_argument("--pars_save_path",      type=str, default="pars/iris")
 hpars = parser.parse_args()
 
@@ -24,7 +24,7 @@ if "__main__" == __name__:
     print(np.unique(labels))
     print(labels.shape)
     labs = one_hot(labels)
-    X, y, testX, testY = split(data, labs, hpars.test_perc)
+    X, y, testX, testY = split(data, labs, hpars.test_prc)
 
     # Train the Neural Net
     nrs = [X.shape[1]] + hpars.hidden_layer_neurons + [y.shape[1]]
@@ -43,14 +43,14 @@ if "__main__" == __name__:
     
 
     cm = confusion_matrix(y_test, y_pred)
-    acc = accuracy(y_test, y_prob)
     print("Confusion Matrix:")
     print(cm)
-    print("Accuracy:", acc)
+    print("Accuracy:", np.diag(cm).sum()/cm.sum())
+    print("AUC:", roc_auc_score(y_test, y_pred))
 
 
-    plt.plot([e for e in range(hpars.epochs)], Net.train_errors)
-    plt.plot([e for e in range(hpars.epochs)], Net.valid_errors)
+    plt.plot([e for e in range(len(Net.train_errors))], Net.train_errors)
+    plt.plot([e for e in range(len(Net.valid_errors))], Net.valid_errors)
     plt.show()
 
     # plot_roc(y_test, y_pred, y_prob)

@@ -1,31 +1,26 @@
 import numpy as np
-from matplotlib import pyplot as plt 
 from model import FCNN
-from functions import accuracy, one_hot, one_hot_c, split, confusion_matrix
+from functions import *
+from sklearn.metrics import roc_auc_score, roc_curve, accuracy_score, confusion_matrix
+import matplotlib.pyplot as plt
 from dbs import DataBase
 import argparse
 
-
 parser = argparse.ArgumentParser()
-parser.add_argument("--train",               type=bool, default=True)
-parser.add_argument("--epochs",               type=int, default=100)
+parser.add_argument("--train",               type=bool, default=False)
+parser.add_argument("--epochs",               type=int, default=500)
 parser.add_argument("--lr",                   type=int, default=0.001)
 parser.add_argument("--batch_size",           type=int, default=4)
 parser.add_argument("--hidden_layer_neurons", type=int, default=[30])
-parser.add_argument("--test_perc",           type=int, default=0.4)
+parser.add_argument("--test_prc",           type=int, default=0.4)
 parser.add_argument("--pars_save_path",      type=str, default="pars/drag")
 hpars = parser.parse_args()
 
 if "__main__" == __name__:
-
     ### Drag Data Set
     data, labels = DataBase("data").load_drag("drag.txt")
-    print(np.unique(labels))
     labs = one_hot(labels)
-    X, y, testX, testY = split(data, labs, hpars.test_perc)
-
-    epochs = 100
-    learning_rate = 0.005
+    X, y, testX, testY = split(data, labs, hpars.test_prc)
     nrs = [X.shape[1]] + hpars.hidden_layer_neurons + [y.shape[1]]
     if hpars.train:
         Net = FCNN(nrs, step=hpars.epochs)
@@ -41,12 +36,12 @@ if "__main__" == __name__:
     y_test = np.array([l[0] for l in levels.items() for t in testY if all(t==l[1])])
     
     cm = confusion_matrix(y_test, y_pred)
-    acc = accuracy(y_test, y_prob)
     print("Confusion Matrix:")
     print(cm)
-    print("Accuracy:", acc)
+    print("Accuracy:", np.diag(cm).sum()/cm.sum())
+    print("AUC:", roc_auc_score(y_test, y_pred))
 
 
-    plt.plot([e for e in range(hpars.epochs)], Net.train_errors)
-    plt.plot([e for e in range(hpars.epochs)], Net.valid_errors)
+    plt.plot([e for e in range(len(Net.train_errors))], Net.train_errors)
+    plt.plot([e for e in range(len(Net.valid_errors))], Net.valid_errors)
     plt.show()
