@@ -45,8 +45,10 @@ if "__main__" == __name__:
     cm = confmtx(y_test, y_pred)
     print("Confusion Matrix:")
     print(cm)
+    print(y_test)
+    print(np.round(y_prob[:, 2], 3))
     print("Accuracy:", np.diag(cm.to_numpy()).sum()/cm.to_numpy().sum())
-    print("AUC:", roc_auc_score(to_nominal(y_test), y_prob, multi_class="ovo"))
+    print("AUC:", roc_auc_score(to_nominal(y_test), y_prob, multi_class="ovr"))
 
 
     plt.plot([e for e in range(len(Net.train_errors))], Net.train_errors)
