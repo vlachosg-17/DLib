@@ -2,7 +2,7 @@ import numpy as np
 import functions as F
 
 class MLP:
-    def __init__(self, dims,**kwargs):
+    def __init__(self, dims, **kwargs):
         if "w" in kwargs.keys():
             self.w = kwargs["w"]
         if "b" in kwargs.keys():
@@ -17,7 +17,7 @@ class MLP:
         else:
             self.f = F.relu
         
-        self.id = "layer"
+        self.id = "MLP"
         self.dims_in = dims[0]
         self.dims_out = dims[1]
         self.params = [self.w, self.b]
@@ -28,15 +28,16 @@ class MLP:
         self.y = None
 
     def __repr__(self):
-        return f"Layer(in={self.dims_in}, out={self.dims_out})"
+        return f"Layer(type={self.id},in={self.dims_in}, out={self.dims_out})"
         
     def forward(self, x):
         """
         x: input of current nodes
+        In the comments:
+            - d: number of examples in data set
+            - n: number of neurons in current layer
+            - m: number of neurons in the next layer
         """
-        # d: number of example in data set
-        # n: number of neurons in current layer
-        # m: in the next
         self.x = x # d x n
         assert self.x.shape[1] == self.dims_in
         self.z = np.dot(self.x, self.w) + self.b # (d x n) @ (n x m) .+ (1 x m) = d x m
@@ -45,17 +46,28 @@ class MLP:
     
     def backprop(self, node):
         """
-        The backpropagation method that calculates the derivatives of
-        the loss function with respect to weights and bias.
-        node: node ahead of the current node. The last node is presume to the 
-        be the loss function, while to find the DwL of the last layer we 'backpropagate'
-        from the loss function.
+         ------------------------     Forward    -------------------------- 
+        |                        |  ----------> |                          |  
+        | layer-l (current node) |              | layer-(l+1) (ahead node) | 
+        |                        |  <---------- |                          | 
+         ------------------------     Backward   --------------------------     
+        node: is the layer-(l+1) which is ahead from the current node (layer-l). 
+              The last node is presume to be the loss function, 
+              while to find the DwL from the last layer 
+              we 'backpropagate' from the loss function node.
+
+        self.DzL: else known as delta, is apparent that is calculated with different ways that are depended
+                  in the type of the ahead layer (node.id). When the code is extended this layer
+                  will calulated DzL in multiple ways according to object node.id. For now the only layer
+                  that lies ahead is an "loss" layer or an "MLP" layer as this one.
+
+        In the comments:
+            - n3: number of neurons in the layer ahead
+            - n2: number of neurons in the current layer
+            - n1: number of neurons in the layer before
+            - d: number of examples in data set
+            - n: number of classes in the dataset or number of neurons in the last layer
         """
-        # n3: number of neurons in the layer ahead
-        # n2: number of neurons in the current layer
-        # n1: number of neurons in the layer before
-        # d: number of examples in data set
-        # n: number of classes in the dataset
         if node.id is "loss":
             if node.type == "entropy": self.DzL = node.y_hat - node.y # (d x n) - (d x n) = d x n
             else: self.DzL = 2*(node.y_hat - node.y) * self.f(self.z) # ((d x n) - (d x n)) * d x n = d x n
@@ -67,8 +79,11 @@ class MLP:
 
 class Loss:
     def __init__(self, y, y_hat, type="entropy"):
-        # d: number of examples
-        # n: number of classes = number of neurons in last layer
+        """
+        In the commnets:
+            - d: number of examples
+            - n: number of classes = number of neurons in last layer
+        """
         self.id = "loss"
         self.y = y # d x n
         self.y_hat = y_hat # d x n
