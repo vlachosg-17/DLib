@@ -1,8 +1,7 @@
 import numpy as np
-from sklearn.utils import multiclass
 from model import FCNN
 from functions import *
-from sklearn.metrics import roc_auc_score, roc_curve, confusion_matrix, accuracy_score
+from sklearn.metrics import roc_auc_score
 import matplotlib.pyplot as plt
 from dbs import DataBase
 import argparse
@@ -36,22 +35,20 @@ if "__main__" == __name__:
         Net = FCNN(nrs, step=hpars.epochs, stored_path=hpars.pars_save_path)
     print(Net)    
     
-    levels = one_hot_c(np.unique(labels))
+    levels = eye_levels(np.unique(labels))
     y_prob = Net.prob(testX)
     y_pred = Net.predict(testX, classes=levels)
     y_test = np.array([l[0] for l in levels.items() for t in testY if all(t==l[1])])
     
 
-    cm = confusion_matrix(y_test, y_pred)
+
+    cm = confmtx(y_test, y_pred)
     print("Confusion Matrix:")
     print(cm)
-    print("Accuracy:", np.diag(cm).sum()/cm.sum())
-    print("AUC:", roc_auc_score(y_test, y_pred))
+    print("Accuracy:", np.diag(cm.to_numpy()).sum()/cm.to_numpy().sum())
+    print("AUC:", roc_auc_score(to_nominal(y_test), y_prob, multi_class="ovo"))
 
 
     plt.plot([e for e in range(len(Net.train_errors))], Net.train_errors)
     plt.plot([e for e in range(len(Net.valid_errors))], Net.valid_errors)
     plt.show()
-
-    # plot_roc(y_test, y_pred, y_prob)
-    

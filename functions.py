@@ -36,7 +36,7 @@ def shuffle(X, Y):
     new_raws = np.random.choice(np.arange(X.shape[0]), size = X.shape[0], replace=False)
     return X[new_raws], Y[new_raws]
 
-def one_hot_c(classes):
+def eye_levels(classes):
     """
     classes: unique array of labels from the data set 
             e.g. classes = [1, 2, 3] or ["dog", "cat"] ...
@@ -46,25 +46,14 @@ def one_hot_c(classes):
 
 def one_hot(x):
     if len(x.shape)>1: x=x.reshape(np.max(x.shape),)
-    levels = one_hot_c(np.unique(x))
+    levels = eye_levels(np.unique(x))
     return np.array([levels[l] for l in x for level in levels.keys() if l == level])
-
-def reverse_one_hot(x, levels):
-    levels = one_hot_c(levels)
-    return np.array([l[0] for l in levels.items() for t in x if all(t==l[1])])
 
 def to_nominal(x):
     classes = np.unique(x)
     for i, c in enumerate(classes):
         x = np.where(x==c, i, x)
     return x.astype(np.int16)
-    
-def reverse_nominal(x, levels):
-    x = x.astype(levels.dtype.str)
-    for i, c in enumerate(levels):
-        i = str(i)
-        x = np.where(x==i, c, x)
-    return x
 
 def plot_roc(y_test, y_pred, y_prob):
     fpr, tpr, _ = m.roc_curve(y_test, y_pred)
@@ -78,23 +67,13 @@ def plot_roc(y_test, y_pred, y_prob):
     plt.xlabel('False Positive Rate')
     plt.show()
 
-def confusion_matrix(y_true, y_pred):
+def confmtx(y_true, y_pred):
     """
     |        | prediction |
     +--------+------------+
     | actual |    cm      |
     """
-    levels = np.unique(y_true)
-    C = np.zeros(shape = [len(levels), len(levels)], dtype="int")
-    for i, true_class in enumerate(levels):
-        for j, pred_class in enumerate(levels):
-            C[i, j] = np.sum((y_true==true_class) & (y_pred==pred_class))
+    C = m.confusion_matrix(y_true, y_pred)
     return pd.DataFrame(C, 
-                        columns=[f"p_{k+1}" for k in range(len(levels))],
-                        index=[f"t_{k+1}" for k in range(len(levels))])
-    
-def accuracy(y_true, y_pred):
-    cm = confusion_matrix(y_true, y_pred).to_numpy()
-    return np.sum(np.diag(cm)) / np.sum(cm)
-
-
+                        columns=[f"p_{k+1}" for k in range(C.shape[1])],
+                        index=[f"t_{k+1}" for k in range(C.shape[0])])
