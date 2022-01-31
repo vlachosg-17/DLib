@@ -65,6 +65,37 @@ class DataBase:
                 k+=1
         data, labels = np.array(data, dtype="float32"), np.array(labels, dtype="int8")
         return data, labels
+    
+    def load_cifar10(self, filename):
+        self.filepath = self.path + "/" + filename
+        data = []
+        labels = []
+        with open(self.filepath, "r") as f:
+            for line in f:
+                l = line.strip().split(",")
+                data.append(l[:-1])
+                labels.append(l[-1])
+        return np.array(data, dtype=np.int32), np.array(labels)
+
+    def load_digits(self, filename, lables_true=True):
+        self.filepath = self.path + "/" + filename
+        data = []
+        labels = []
+        k=0
+        with open(self.filepath, "r") as f:
+            for line in f:
+                if k != 0:
+                    l = line.strip().split(",")
+                    data.append(l[1:])
+                    labels.append(l[0])
+                    k+=1
+                else:
+                    k+=1
+        d, l = np.array(data, dtype=np.int32), np.array(labels, dtype=np.int32)
+        if lables_true:
+            return d, l
+        else:
+            return np.hstack([l.reshape(-1,1), d])
 
     def save_par(self, parameters, filename):
         self.filepath = self.path + "/" + filename

@@ -5,8 +5,12 @@ class MLP:
     def __init__(self, dims, **kwargs):
         if "w" in kwargs.keys():
             self.w = kwargs["w"]
+        else:
+            self.w = None
         if "b" in kwargs.keys():
             self.b = kwargs["b"]
+        else:
+            self.b = None
         if "activation" in kwargs.keys():
             if kwargs["activation"] == "softmax":
                 self.f = F.softmax
@@ -89,8 +93,8 @@ class Loss:
         self.y_hat = y_hat # d x n
         self.type = type
         if self.type == "square":
-            self.errors = np.sum((self.y_hat-self.y) * (self.y_hat-self.y))
-             
+            self.errors = np.sum((self.y_hat-self.y) * (self.y_hat-self.y), axis=1)
+
         if self.type == "entropy":
             self.errors = -np.sum(y * np.log(y_hat), axis=1) # sum((d x n) * (d x n)) = d x 1 
 
