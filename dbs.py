@@ -1,4 +1,4 @@
-from functions import shuffle, split
+from functions import shuffle, to_nominal
 import numpy as np
 import os
 
@@ -31,7 +31,7 @@ class DataBase:
         labels=np.array(labels_obserations, dtype="int32")
         return data, labels
     
-    def load_iris(self, filename, random_seed=0):
+    def load_iris(self, filename, lab_nom=False, random_seed=0):
         self.filepath = self.path + "/" + filename
         with open(self.filepath, "r") as f:
             labels=[]
@@ -43,7 +43,8 @@ class DataBase:
                 line=line.split(",")
                 data.append(line[:-1])
                 labels.append(line[-1])
-        data, labels = np.array(data, dtype="float32"), np.array(labels)
+        if lab_nom: data, labels = np.array(data, dtype="float32"), to_nominal(np.array(labels))
+        else: data, labels = np.array(data, dtype="float32"), np.array(labels)
         np.random.seed(random_seed)
         return shuffle(data, labels)
 
@@ -66,7 +67,7 @@ class DataBase:
         data, labels = np.array(data, dtype="float32"), np.array(labels, dtype="int8")
         return data, labels
     
-    def load_cifar10(self, filename):
+    def load_cifar10(self, filename, lab_nom=False):
         self.filepath = self.path + "/" + filename
         data = []
         labels = []
@@ -75,7 +76,10 @@ class DataBase:
                 l = line.strip().split(",")
                 data.append(l[:-1])
                 labels.append(l[-1])
-        return np.array(data, dtype=np.int32), np.array(labels)
+        if lab_nom:
+            return np.array(data, dtype=np.int32), to_nominal(np.array(labels))
+        else:
+            return np.array(data, dtype=np.int32), np.array(labels)
 
     def load_digits(self, filename, lables_true=True):
         self.filepath = self.path + "/" + filename

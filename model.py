@@ -29,26 +29,24 @@ class Model:
         return s
     
     def init_params(self, path):
-        self.layers = len(self.neurons) - 1
         if path is None:
+            # The weights and biases are already set
             self.train_errors, self.valid_errors = [], []
-            self.init_w = [np.random.uniform(-np.sqrt(1/self.neurons[l]),np.sqrt(1/self.neurons[l]),size=[self.neurons[l], self.neurons[l+1]]) for l in range(self.layers)]
-            self.init_b = [np.random.uniform(-np.sqrt(1/self.neurons[l]),np.sqrt(1/self.neurons[l]), size=[1, self.init_w[l].shape[1]]) for l in range(self.layers)]
         else:
             self.db = DataBase(path)
             self.init_w = self.db.load_par("weigths.txt")
             self.init_b = self.db.load_par("bias.txt")
             self.train_errors = self.db.load_errors("train_errors.txt")
             self.valid_errors = self.db.load_errors("valid_errors.txt")
-
-        for l in range(self.layers):
-            self.Layers[l].w, self.Layers[l].b = self.init_w[l], self.init_b[l]  
+            for l in range(self.layers):
+                self.Layers[l].w, self.Layers[l].b = self.init_w[l], self.init_b[l]  
         
     def add(self, node):
         if len(self.Layers) == 0:
             self.neurons.append(node.dims_in)
         self.neurons.append(node.dims_out)
         self.Layers.append(node)
+        self.layers = len(self.neurons) - 1
         
     def iter_batch(self, X):
         n_data_segments = X.shape[0]//self.batch
@@ -66,10 +64,11 @@ class Model:
         return self.forward(X)
 
     
-    def predict(self, X, classes):
-        pred = self.forward(X)
-        pred = np.array([np.eye(1, len(p), np.argmax(p)).flatten() for p in pred], dtype=np.int16)
-        return np.array([l[0] for l in classes.items() for t in pred if all(t==l[1])])
+    def predict(self, X, classes=True):
+        # pred = self.forward(X)
+        # pred = np.array([np.eye(1, len(p), np.argmax(p)).flatten() for p in pred], dtype=np.int32)
+        # return np.array([c1 for c1, c2 in classes.items() for t in pred if all(t==c2)])
+        return np.argmax(self.prob(X), axis=1)
 
     def train(self, X, y, epochs = 1, lr=0.01, batch_size=None, save_pars_path=None):
         self.init_params(self.path)

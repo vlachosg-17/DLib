@@ -41,19 +41,22 @@ def eye_levels(classes):
     classes: unique array of labels from the data set 
             e.g. classes = [1, 2, 3] or ["dog", "cat"] ...
     """
-    u=[[1 if h==c else 0 for h in classes] for c in classes]
-    return {classes[k]: u[k] for k in range(len(classes))}
+    return {c: np.where(classes!=c, 0, 1) for c in classes}
 
 def one_hot(x):
     if len(x.shape)>1: x=x.reshape(np.max(x.shape),)
     levels = eye_levels(np.unique(x))
     return np.array([levels[l] for l in x for level in levels.keys() if l == level])
 
+def reverse_one_hot(x, classes):
+    levels = eye_levels(classes)
+    return np.array([l[0] for t in x for l in levels.items() if all(t==l[1])])
+
 def to_nominal(x):
     classes = np.unique(x)
-    for i, c in enumerate(classes):
-        x = np.where(x==c, i, x)
-    return x.astype(np.int16)
+    for k, c in enumerate(classes):
+        x = np.where(x==c, k, x)
+    return x.astype(np.int32)
 
 def plot_roc(y_test, y_pred, y_prob):
     fpr, tpr, _ = m.roc_curve(y_test, y_pred)
@@ -77,3 +80,11 @@ def confmtx(y_true, y_pred):
     return pd.DataFrame(C, 
                         columns=[f"p_{k+1}" for k in range(C.shape[1])],
                         index=[f"t_{k+1}" for k in range(C.shape[0])])
+
+if __name__ == '__main__':
+    l1 = np.array(["a", "b", "c"])
+    print(eye_levels(l1))
+    l2 = np.array([0, 1, 2])
+    print(eye_levels(l2))
+    l3 = np.random.choice(["a", "b", "c"], size=10)
+    print(to_nominal(l3))

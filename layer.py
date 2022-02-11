@@ -3,14 +3,24 @@ import functions as F
 
 class MLP:
     def __init__(self, dims, **kwargs):
+        self.id = "MLP"
+        self.dims_in = dims[0]
+        self.dims_out = dims[1]
+        self.neurons = self.dims_out
+        self.DwL = None
+        self.loss = None
+        self.x = None
+        self.z = None
+        self.y = None
+
         if "w" in kwargs.keys():
             self.w = kwargs["w"]
         else:
-            self.w = None
+            self.w = np.random.uniform(-np.sqrt(1/self.dims_in), np.sqrt(1/self.dims_in), size=[self.dims_in, self.dims_out])
         if "b" in kwargs.keys():
             self.b = kwargs["b"]
         else:
-            self.b = None
+            self.b = np.random.uniform(-np.sqrt(1/self.dims_in), np.sqrt(1/self.dims_in), size=[1, self.w.shape[1]])
         if "activation" in kwargs.keys():
             if kwargs["activation"] == "softmax":
                 self.f = F.softmax
@@ -21,15 +31,7 @@ class MLP:
         else:
             self.f = F.relu
         
-        self.id = "MLP"
-        self.dims_in = dims[0]
-        self.dims_out = dims[1]
-        self.params = [self.w, self.b]
-        self.DwL = None
-        self.loss = None
-        self.x = None
-        self.z = None
-        self.y = None
+        
 
     def __repr__(self):
         return f"Layer(type={self.id},in={self.dims_in}, out={self.dims_out})"

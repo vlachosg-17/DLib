@@ -10,19 +10,20 @@ import argparse
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--train",               type=bool, default=True)
-parser.add_argument("--epochs",               type=int, default=100)
-parser.add_argument("--lr",                   type=float, default=0.001)
-parser.add_argument("--batch_size",           type=int, default=100)
-parser.add_argument("--hidden_layer_neurons", type=int, default=[100])
-parser.add_argument("--test_prc",             type=int, default=0.4)
-parser.add_argument("--pars_save_path",       type=str, default="pars/digits")
-parser.add_argument("--latest_checkpoint_path", type=str, default=None)
+parser.add_argument("--main_path",              type=str,   default="H:\My Drive\ML\My-Object-Orienated-Neural-Network")
+parser.add_argument("--data_path",              type=str,   default="P:\data")
+parser.add_argument("--train",                  type=bool,  default=True)
+parser.add_argument("--epochs",                 type=int,   default=100)
+parser.add_argument("--lr",                     type=float, default=0.001)
+parser.add_argument("--batch_size",             type=int,   default=100)
+parser.add_argument("--hidden_layer_neurons",   type=int,   default=[100])
+parser.add_argument("--pars_save_path",         type=str,   default="pars/digits")
+parser.add_argument("--latest_checkpoint_path", type=str,   default=None)
 hpars = parser.parse_args()
 
 if __name__=="__main__":
-    train_data, train_labels = DataBase("data").load_digits("train_digits.csv")
-    testX = DataBase("data").load_digits("test_digits.csv", lables_true=False)
+    train_data, train_labels = DataBase(hpars.data_path).load_digits("train_digits.csv")
+    testX = DataBase(hpars.data_path).load_digits("test_digits.csv", lables_true=False)
     train_labs = one_hot(train_labels)
     
     X, y = shuffle(train_data, train_labs)
@@ -31,8 +32,8 @@ if __name__=="__main__":
     print("Trainset labels dims: ", y.shape)
     # print("Testset data dims:", testX.shape)
     # print("Testset labels dims:", testY.shape)
-
-    # Train the Neural Net
+    
+    # Neural Net's Architecture
     Net = Model(loss = "square", stored_path=hpars.latest_checkpoint_path, step=1)
     nrs = [X.shape[1]] + hpars.hidden_layer_neurons + [y.shape[1]]
     for l in range(len(nrs)-1):
@@ -41,17 +42,13 @@ if __name__=="__main__":
         else:
             Net.add(MLP(dims = [nrs[l], nrs[l+1]], activation="softmax"))
     print(Net)    
-
+    # Train the Neural Net
     if hpars.train:
         Net.train(X, y, epochs=hpars.epochs, lr=hpars.lr, batch_size=hpars.batch_size, save_pars_path=hpars.pars_save_path)
     
-    
-    levels = eye_levels(np.unique(train_labels))
     y_prob = np.round(Net.prob(testX), 3)
-    y_pred = np.argmax(y_prob, axis=1)
-    # y_pred = Net.predict(testX, classes=levels)
-    # y_test = testY
-
+    y_pred = Net.predict(testX)
+    
     sample=np.random.choice(testX.shape[0], 1)
     for p, img in zip(y_prob[sample], testX[sample]):
         f, (ax1, ax2) = plt.subplots(1, 2) 
@@ -77,11 +74,6 @@ if __name__=="__main__":
             axs[i, j].set_axis_off()
     plt.tight_layout()
     plt.show()
-    # cm = confmtx(y_test, y_pred)
-    # print("Confusion Matrix:")
-    # print(cm)
-    # print("Accuracy:", np.diag(cm.to_numpy()).sum()/cm.to_numpy().sum())
-    # print("AUC:", roc_auc_score(y_test, y_prob, multi_class="ovr"))
 
 
     plt.plot([e for e in range(len(Net.train_errors))], Net.train_errors, label="train error")
