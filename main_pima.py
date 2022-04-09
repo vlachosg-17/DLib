@@ -1,22 +1,23 @@
 import numpy as np
-from model import Model
-from layer import MLP
-from functions import *
-from sklearn.metrics import roc_auc_score
+from sklearn.metrics import roc_auc_score, roc_curve, auc
 import matplotlib.pyplot as plt
-from dbs import DataBase
 import argparse
 
+from mynn.model import Model
+from mynn.layers import MLP, ReLu, Softmax
+from utils.functions import *
+from utils.dbs import DataBase
+
 parser = argparse.ArgumentParser()
-parser.add_argument("--main_path",              type=str,   default="H:\My Drive\ML\My-Object-Orienated-Neural-Network")
+parser.add_argument("--main_path",              type=str,   default="H:\My Drive\ML\DLib")
 parser.add_argument("--data_path",              type=str,   default="P:\data")
-parser.add_argument("--train",                  type=bool,  default=True)
-parser.add_argument("--epochs",                 type=int,   default=1500)
-parser.add_argument("--lr",                     type=float, default=0.003)
+parser.add_argument("--train",                  type=bool,  default=False)
+parser.add_argument("--epochs",                 type=int,   default=1000)
+parser.add_argument("--lr",                     type=float, default=0.001)
 parser.add_argument("--batch_size",             type=int,   default=4)
-parser.add_argument("--hidden_layer_neurons",   type=int,   default=[100, 40])
+# parser.add_argument("--hidden_layer_neurons",   type=int,   default=[100, 40])
 parser.add_argument("--test_prc",               type=int,   default=0.4)
-parser.add_argument("--pars_save_path",         type=str,   default="pars/pima")
+parser.add_argument("--save_dir",         type=str,   default="pars/pima")
 parser.add_argument("--latest_checkpoint_path", type=str,   default=None)
 hpars = parser.parse_args()
 
@@ -29,17 +30,28 @@ if "__main__" == __name__:
     X, y, testX, testY = split(data, labs, hpars.test_prc)
 
     # Neural Net's Architecture
-    Net = Model(stored_path=hpars.latest_checkpoint_path, step=100)
-    nrs = [X.shape[1]] + hpars.hidden_layer_neurons + [y.shape[1]]
-    for l in range(len(nrs)-1):
-        if l != len(nrs)-2:
-            Net.add(MLP(dims = [nrs[l], nrs[l+1]], activation="relu"))
-        else:
-            Net.add(MLP(dims = [nrs[l], nrs[l+1]], activation="softmax"))
-    print(Net)    
-    # Train the Neural Net
+    layers = [
+        MLP([X.shape[1], 500]), 
+        ReLu(), # end of 1st hidden layer
+        MLP([500, 200]), 
+        ReLu(), # end of 2nd hidden layer
+        MLP([200, 100]), 
+        ReLu(), # end of 3rd hidden layer
+        MLP([100, 50]), 
+        ReLu(), # end of 4th hidden layer
+        MLP([50, y.shape[1]]), 
+        Softmax() # end 5th hidden or output layer
+        ]
+    Net = Model(pipline=layers, loss = "square", stored_path = f"{hpars.main_path}\{hpars.save_dir}", step=hpars.epochs)
     if hpars.train:
-        Net.train(X, y, epochs=hpars.epochs, lr=hpars.lr, batch_size=hpars.batch_size, save_pars_path=hpars.pars_save_path)
+        Net.train(
+            X=X, 
+            y=y, 
+            epochs=hpars.epochs, 
+            lr=hpars.lr, 
+            batch_size=hpars.batch_size, 
+            save_path=f"{hpars.main_path}\{hpars.save_dir}"
+            )
     
     y_prob = Net.prob(testX)
     y_pred = Net.predict(testX)
@@ -55,6 +67,17 @@ if "__main__" == __name__:
     print("AUC:", roc_auc_score(y_test, y_prob[:, 1]))
 
 
-    plt.plot([e for e in range(len(Net.train_errors))], Net.train_errors)
-    plt.plot([e for e in range(len(Net.valid_errors))], Net.valid_errors)
+    fig, (ax1, ax2) = plt.subplots(2, 1)
+    ax1.plot([e for e in range(len(Net.train_errors))], Net.train_errors, label="train error")
+    ax1.plot([e for e in range(len(Net.valid_errors))], Net.valid_errors, label="test error")
+    ax1.legend(loc="upper right")
+    fpr, tpr, threshold = roc_curve(y_test, y_prob[:, 1])
+    roc_auc = auc(fpr, tpr)
+    ax2.plot(fpr, tpr, 'b', label = 'AUC = %0.2f' % roc_auc)
+    ax2.legend(loc = 'lower right')
+    ax2.plot([0, 1], [0, 1],'r--')
+    ax2.set_xlim([0, 1])
+    ax2.set_ylim([0, 1])
+    ax2.set_ylabel('True Positive Rate')
+    ax2.set_xlabel('False Positive Rate')
     plt.show()

@@ -1,23 +1,21 @@
 import numpy as np
-import sys
-from model import Model
-from layer import MLP
-from functions import *
-from sklearn.metrics import roc_auc_score
 import matplotlib.pyplot as plt
-from dbs import DataBase
 import argparse
 
+from mynn.model import Model
+from mynn.layers import MLP, ReLu, Softmax
+from utils.functions import *
+from utils.dbs import DataBase
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--main_path",              type=str,   default="H:\My Drive\ML\My-Object-Orienated-Neural-Network")
+parser.add_argument("--main_path",              type=str,   default="H:\My Drive\ML\DLib")
 parser.add_argument("--data_path",              type=str,   default="P:\data")
-parser.add_argument("--train",                  type=bool,  default=True)
+parser.add_argument("--train",                  type=bool,  default=False)
 parser.add_argument("--epochs",                 type=int,   default=100)
 parser.add_argument("--lr",                     type=float, default=0.001)
 parser.add_argument("--batch_size",             type=int,   default=100)
-parser.add_argument("--hidden_layer_neurons",   type=int,   default=[100])
-parser.add_argument("--pars_save_path",         type=str,   default="pars/digits")
+# parser.add_argument("--hidden_layer_neurons",   type=int,   default=[100])
+parser.add_argument("--save_dir",         type=str,   default="pars/digits")
 parser.add_argument("--latest_checkpoint_path", type=str,   default=None)
 hpars = parser.parse_args()
 
@@ -27,6 +25,7 @@ if __name__=="__main__":
     train_labs = one_hot(train_labels)
     
     X, y = shuffle(train_data, train_labs)
+    # X=to_01(X)
     # testX, testY = shuffle(test_data, test_labels)
     print("Trainset data dims: ", X.shape)
     print("Trainset labels dims: ", y.shape)
@@ -34,23 +33,34 @@ if __name__=="__main__":
     # print("Testset labels dims:", testY.shape)
     
     # Neural Net's Architecture
-    Net = Model(loss = "square", stored_path=hpars.latest_checkpoint_path, step=1)
-    nrs = [X.shape[1]] + hpars.hidden_layer_neurons + [y.shape[1]]
-    for l in range(len(nrs)-1):
-        if l != len(nrs)-2:
-            Net.add(MLP(dims = [nrs[l], nrs[l+1]], activation="sigmoid"))
-        else:
-            Net.add(MLP(dims = [nrs[l], nrs[l+1]], activation="softmax"))
-    print(Net)    
-    # Train the Neural Net
+    layers = [
+         MLP([X.shape[1], 100])
+        ,ReLu() # end of 1st hidden layer
+        # ,MLP([100, 80])
+        # ,ReLu() # end of 2nd hidden layer
+        # ,MLP([80, 50])
+        # ,ReLu() # end of 3rd hidden layer
+        ,MLP([100, y.shape[1]])
+        ,Softmax() # end 4th hidden or output layer
+        ]
+    Net = Model(pipline=layers, loss="entropy", stored_path = f"{hpars.main_path}\{hpars.save_dir}")
     if hpars.train:
-        Net.train(X, y, epochs=hpars.epochs, lr=hpars.lr, batch_size=hpars.batch_size, save_pars_path=hpars.pars_save_path)
+        Net.train(
+            X=to_01(X), 
+            y=y, 
+            epochs=hpars.epochs, 
+            lr=hpars.lr, 
+            batch_size=hpars.batch_size, 
+            save_path=f"{hpars.main_path}\{hpars.save_dir}"
+        )
     
-    y_prob = np.round(Net.prob(testX), 3)
-    y_pred = Net.predict(testX)
+    testX01 = to_01(testX)
+    y_prob = np.round(Net.prob(testX01), 3)
+    y_pred = Net.predict(testX01)
     
-    sample=np.random.choice(testX.shape[0], 1)
-    for p, img in zip(y_prob[sample], testX[sample]):
+    sample=np.random.choice(testX01.shape[0], 1)
+    # sample=range(0, 5)
+    for p, img in zip(y_prob[sample], testX01[sample]):
         f, (ax1, ax2) = plt.subplots(1, 2) 
         ax1.imshow(img.reshape(28, 28))
         ax1.set_title('The image')
@@ -63,8 +73,8 @@ if __name__=="__main__":
         plt.show()
 
     n=5
-    sample=np.random.choice(testX.shape[0], n * n)
-    testXs = testX[sample]
+    sample=np.random.choice(testX01.shape[0], n * n)
+    testXs = testX01[sample]
     y_preds = y_pred[sample]
     fig, axs = plt.subplots(n, n)
     for i in range(axs.shape[0]):
